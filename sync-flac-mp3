@@ -1,0 +1,62 @@
+#!/usr/bin/env perl
+
+use File::Find;
+use File::Path qw(make_path);
+use File::Basename;
+use Parallel::Forker;
+
+$ENV{LC_ALL}='C'; # XXX
+
+my $flac2mp3 = "$ENV{HOME}/bin/flac2mp3";
+my $flacpath = '/tank/media/flac';
+my $mp3path = '/tank/media/flac-mp3';
+
+my $min_mp3_size = 100; # bytes, sanity check
+my $nicelevel = 10;
+
+die "$flacpath does not exist" unless -e $flacpath;
+die "$mp3path does not exist" unless -e $mp3path;
+
+my %existing_mp3s;
+find(sub {
+  $existing_mp3s{$File::Find::name} = 1
+    if m/\.mp3$/i && ((stat $File::Find::name)[7] > $min_mp3_size);
+}, $mp3path);
+
+my @todo;
+find(sub {
+  if (/\.flac$/) {
+  my $mp3 = $File::Find::name;
+  $mp3 =~ s/\.flac$/\.mp3/;
+  $mp3 =~ s/$flacpath/$mp3path/;
+  push @todo, [$File::Find::name, $mp3]
+    unless $existing_mp3s{$mp3};
+  }
+}, $flacpath);
+
+print (scalar keys %existing_mp3s) . "existing mp3s\n";
+print (scalar @todo) . "files to convert\n";
+
+my $forker = new Parallel::Forker (use_sig_child=>0);
+$forker->max_proc(4);
+$SIG{TERM} = sub { $forker->kill_tree_all('TERM') if $forker && $forker->in_parent; die "Quitting...\n"; };
+foreach my $pair (@todo) {
+  make_path(dirname($pair->[1]));
+  $forker->schedule(
+    run_on_start => sub {
+      $SIG{ALRM} = 'DEFAULT';
+      $SIG{CHLD} = 'DEFAULT';
+      exec $flac2mp3, @$pair;
+    },
+    run_on_finish => sub {
+      print "$pair->[1] done\n";
+    },
+  )->ready;
+
+}
+
+while ($forker->is_any_left) {
+  $forker->poll;
+  sleep 1;
+}
+print "DONE\n";

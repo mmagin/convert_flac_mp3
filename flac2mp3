@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+LAME_OPTS="-V 2"
+
+if [ $# != 2 ] ; then
+    echo "usage: flac2mp3 <infile.flac> <outfile.mp3>"
+    exit 1
+fi
+
+ARTIST=`metaflac --show-tag=ARTIST "$1"`
+ARTIST=${ARTIST#*=}
+ALBUM=`metaflac --show-tag=ALBUM "$1"`
+ALBUM=${ALBUM#*=}
+TITLE=`metaflac --show-tag=TITLE "$1"`
+TITLE=${TITLE#*=}
+DATE=`metaflac --show-tag=DATE "$1"`
+DATE=${DATE#*=}
+GENRE=`metaflac --show-tag=GENRE "$1"`
+GENRE=${GENRE#*=}
+TRACKNUMBER=`metaflac --show-tag=TRACKNUMBER "$1"`
+TRACKNUMBER=${TRACKNUMBER#*=}
+CDDB=`metaflac --show-tag=CDDB "$1"`
+CDDB=${CDDB#*=}
+
+#flac -dc "$1" | lame --tt "$TITLE" --ta "$ARTIST" --tl "$ALBUM" --ty "$DATE" --tn "$TRACKNUMBER" --tg "$GENRE" --tc "DISCID=$CDDB" $LAME_OPTS - "$2"
+# no genre for now due to impedance mismatch
+flac -dc "$1" | lame --tt "$TITLE" --ta "$ARTIST" --tl "$ALBUM" --ty "$DATE" --tn "$TRACKNUMBER" --tc "DISCID=$CDDB" $LAME_OPTS - "$2"
