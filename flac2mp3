@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-LAME_OPTS="-V 2"
+#LAME_OPTS="-V 2"
+LAME_OPTS="--preset insane"
 
 if [ $# != 2 ] ; then
     echo "usage: flac2mp3 <infile.flac> <outfile.mp3>"
