@@ -1,18 +1,27 @@
 #!/usr/bin/env perl
 
+use strict;
+use warnings;
+
+use POSIX qw(nice);
+use FindBin qw($Bin);
 use File::Find;
 use File::Path qw(make_path);
 use File::Basename;
 use Parallel::Forker;
 
-$ENV{LC_ALL}='C'; # XXX
+# Please configure these:
+my $flacpath = '/Volumes/ext/flac';
+my $mp3path = '/Volumes/ext/flac-mp3';
+my $max_proc = 2; # maximum level of parallel jobs to run for transcoding
 
-my $flac2mp3 = "$ENV{HOME}/bin/flac2mp3";
-my $flacpath = '/tank/media/flac';
-my $mp3path = '/tank/media/flac-mp3';
-
-my $min_mp3_size = 100; # bytes, sanity check
+# possibly interesting:
+$ENV{LC_ALL}='en_US.UTF-8';
 my $nicelevel = 10;
+
+# shouldn't need to configure these:
+my $flac2mp3 = "$Bin/flac2mp3";
+my $min_mp3_size = 24; # theoretical minimum size of an mp3 frame (bytes)
 
 die "$flacpath does not exist" unless -e $flacpath;
 die "$mp3path does not exist" unless -e $mp3path;
@@ -34,11 +43,11 @@ find(sub {
   }
 }, $flacpath);
 
-print (scalar keys %existing_mp3s) . "existing mp3s\n";
-print (scalar @todo) . "files to convert\n";
+print scalar(keys %existing_mp3s) . " existing mp3s\n";
+print scalar(@todo) . " new FLAC files to convert\n";
 
 my $forker = new Parallel::Forker (use_sig_child=>0);
-$forker->max_proc(4);
+$forker->max_proc($max_proc);
 $SIG{TERM} = sub { $forker->kill_tree_all('TERM') if $forker && $forker->in_parent; die "Quitting...\n"; };
 foreach my $pair (@todo) {
   make_path(dirname($pair->[1]));
@@ -46,6 +55,7 @@ foreach my $pair (@todo) {
     run_on_start => sub {
       $SIG{ALRM} = 'DEFAULT';
       $SIG{CHLD} = 'DEFAULT';
+      nice($nicelevel);
       exec $flac2mp3, @$pair;
     },
     run_on_finish => sub {

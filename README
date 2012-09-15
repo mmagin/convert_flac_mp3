@@ -1,0 +1,6 @@
+Here is a simple pair of scripts to convert a directory of FLAC
+files to MP3 files.  Once sync-flac-mp3 is configured (see the
+variables near the top of the file, it may be re-run periodically
+to create MP3 files in a file hierarchy matching the hierarchy of
+FLAC files.  A typical use case for this is for the creation of mp3
+files for portable devices from a master directory of FLACs.

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-#LAME_OPTS="-V 2"
 LAME_OPTS="--preset insane"
 
 if [ $# != 2 ] ; then
@@ -23,6 +22,5 @@ TRACKNUMBER=${TRACKNUMBER#*=}
 CDDB=`metaflac --show-tag=CDDB "$1"`
 CDDB=${CDDB#*=}
 
-#flac -dc "$1" | lame --tt "$TITLE" --ta "$ARTIST" --tl "$ALBUM" --ty "$DATE" --tn "$TRACKNUMBER" --tg "$GENRE" --tc "DISCID=$CDDB" $LAME_OPTS - "$2"
 # no genre for now due to impedance mismatch
 flac -dc "$1" | lame --tt "$TITLE" --ta "$ARTIST" --tl "$ALBUM" --ty "$DATE" --tn "$TRACKNUMBER" --tc "DISCID=$CDDB" $LAME_OPTS - "$2"
